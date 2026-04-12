@@ -4,18 +4,16 @@ import { createNode } from '../../../db/nodes.js';
 import { createEdge } from '../../../db/edges.js';
 import { getDefaultTemplate, nodeTypes } from '../../../nodes/registry.js';
 
-export const GET: APIRoute = async ({ locals }) => {
-  const db = locals.runtime.env.DB;
-  const workflows = await listWorkflows(db);
+export const GET: APIRoute = async () => {
+  const workflows = await listWorkflows();
   return new Response(JSON.stringify(workflows), {
     headers: { 'Content-Type': 'application/json' },
   });
 };
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  const db = locals.runtime.env.DB;
+export const POST: APIRoute = async ({ request }) => {
   const data = await request.json();
-  const workflow = await createWorkflow(db, { name: data.name });
+  const workflow = await createWorkflow({ name: data.name });
 
   if (data.fromTemplate) {
     const template = getDefaultTemplate();
@@ -23,7 +21,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     for (const n of template.nodes) {
       const typeDef = nodeTypes[n.type];
-      const created = await createNode(db, {
+      const created = await createNode({
         workflow_id: workflow.id,
         node_type: n.type,
         title: n.title,
@@ -38,7 +36,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       const sourceId = nodeIdMap.get(e.source);
       const targetId = nodeIdMap.get(e.target);
       if (sourceId && targetId) {
-        await createEdge(db, {
+        await createEdge({
           workflow_id: workflow.id,
           source_node: sourceId,
           target_node: targetId,

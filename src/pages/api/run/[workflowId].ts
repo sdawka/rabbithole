@@ -3,9 +3,8 @@ import { getWorkflow } from '../../../db/workflows.js';
 import { topologicalSort } from '../../../engine/dag.js';
 import { runNode } from '../../../engine/runner.js';
 
-export const POST: APIRoute = async ({ params, locals }) => {
-  const db = locals.runtime.env.DB;
-  const workflow = await getWorkflow(db, params.workflowId!);
+export const POST: APIRoute = async ({ params }) => {
+  const workflow = await getWorkflow(params.workflowId!);
   if (!workflow) {
     return new Response(JSON.stringify({ error: 'Workflow not found' }), { status: 404 });
   }
@@ -24,7 +23,7 @@ export const POST: APIRoute = async ({ params, locals }) => {
           const results = await Promise.allSettled(
             layer.map(async (nodeId) => {
               send({ type: 'node_start', nodeId });
-              const result = await runNode(db, nodeId);
+              const result = await runNode(nodeId);
               send({
                 type: 'node_complete',
                 nodeId,

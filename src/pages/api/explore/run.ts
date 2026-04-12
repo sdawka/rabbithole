@@ -18,8 +18,7 @@ function pos(col: number, row: number) {
   return { x: col * COL_SPACING, y: row * ROW_SPACING };
 }
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  const db = locals.runtime.env.DB;
+export const POST: APIRoute = async ({ request }) => {
   const { topic, context, angles } = await request.json() as {
     topic: string;
     context: string;
@@ -34,7 +33,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
 
       try {
-        const workflow = await createWorkflow(db, { name: topic.slice(0, 60) });
+        const workflow = await createWorkflow({ name: topic.slice(0, 60) });
         send({ type: 'workflow_created', workflowId: workflow.id });
 
         const created = new Map<string, CreatedNode>();
@@ -46,7 +45,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         ): Promise<string> {
           const typeDef = nodeTypes[type];
           const { x, y } = pos(col, row);
-          const node = await createNode(db, {
+          const node = await createNode({
             workflow_id: workflow.id,
             node_type: type,
             title,
@@ -70,7 +69,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         async function makeEdge(sourceType: string, targetId: string, sourceHandle: string, targetHandle: string) {
           const source = created.get(sourceType);
           if (!source) return;
-          const edge = await createEdge(db, {
+          const edge = await createEdge({
             workflow_id: workflow.id,
             source_node: source.id,
             target_node: targetId,
@@ -89,7 +88,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         async function execNode(nodeId: string) {
           send({ type: 'node_start', nodeId });
-          const result = await runNode(db, nodeId);
+          const result = await runNode(nodeId);
           send({
             type: 'node_complete',
             nodeId,
@@ -150,7 +149,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
         send({ type: 'planning', layer: 5, description: 'Analyzing results to decide next steps...' });
 
         const plan = await planAnalysisLayer(
-          db,
           topic,
           angles,
           analysisResult.output_data || '',

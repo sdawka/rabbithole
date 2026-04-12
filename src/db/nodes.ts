@@ -1,13 +1,13 @@
-import type { D1Database } from '@cloudflare/workers-types';
+import { getDb } from './index.js';
 import { nanoid } from 'nanoid';
 import type { NodeRecord } from '../types/index.js';
 
-export async function getNode(db: D1Database, id: string): Promise<NodeRecord | undefined> {
-  const row = await db.prepare('SELECT * FROM nodes WHERE id = ?').bind(id).first<NodeRecord>();
+export async function getNode(id: string): Promise<NodeRecord | undefined> {
+  const row = await getDb().prepare('SELECT * FROM nodes WHERE id = ?').bind(id).first<NodeRecord>();
   return row ?? undefined;
 }
 
-export async function createNode(db: D1Database, data: {
+export async function createNode(data: {
   workflow_id: string;
   node_type: string;
   title: string;
@@ -18,14 +18,14 @@ export async function createNode(db: D1Database, data: {
   preset_id?: string | null;
 }): Promise<NodeRecord> {
   const id = nanoid(12);
-  await db.prepare(
+  await getDb().prepare(
     `INSERT INTO nodes (id, workflow_id, node_type, title, position_x, position_y, system_prompt, user_input, preset_id)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(id, data.workflow_id, data.node_type, data.title, data.position_x, data.position_y, data.system_prompt ?? '', data.user_input ?? '', data.preset_id ?? null).run();
-  return (await getNode(db, id))!;
+  return (await getNode(id))!;
 }
 
-export async function updateNode(db: D1Database, id: string, data: Partial<{
+export async function updateNode(id: string, data: Partial<{
   title: string;
   position_x: number;
   position_y: number;
@@ -44,20 +44,20 @@ export async function updateNode(db: D1Database, id: string, data: Partial<{
     fields.push(`${key} = ?`);
     values.push(value);
   }
-  if (fields.length === 0) return getNode(db, id);
+  if (fields.length === 0) return getNode(id);
   fields.push("updated_at = datetime('now')");
   values.push(id);
-  await db.prepare(`UPDATE nodes SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
-  return getNode(db, id);
+  await getDb().prepare(`UPDATE nodes SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
+  return getNode(id);
 }
 
-export async function deleteNode(db: D1Database, id: string): Promise<boolean> {
-  const result = await db.prepare('DELETE FROM nodes WHERE id = ?').bind(id).run();
+export async function deleteNode(id: string): Promise<boolean> {
+  const result = await getDb().prepare('DELETE FROM nodes WHERE id = ?').bind(id).run();
   return (result.meta?.changes ?? 0) > 0;
 }
 
-export async function getUpstreamOutputs(db: D1Database, nodeId: string): Promise<{ handle: string; output: string; sourceNodeId: string }[]> {
-  const { results } = await db.prepare(`
+export async function getUpstreamOutputs(nodeId: string): Promise<{ handle: string; output: string; sourceNodeId: string }[]> {
+  const { results } = await getDb().prepare(`
     SELECT e.target_handle as handle, n.output_data as output, n.id as sourceNodeId
     FROM edges e
     JOIN nodes n ON n.id = e.source_node

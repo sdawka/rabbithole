@@ -1,9 +1,8 @@
 import type { APIRoute } from 'astro';
 import { getWorkflow, updateWorkflow, deleteWorkflow } from '../../../db/workflows.js';
 
-export const GET: APIRoute = async ({ params, locals }) => {
-  const db = locals.runtime.env.DB;
-  const workflow = await getWorkflow(db, params.id!);
+export const GET: APIRoute = async ({ params }) => {
+  const workflow = await getWorkflow(params.id!);
   if (!workflow) {
     return new Response(JSON.stringify({ error: 'Not found' }), { status: 404 });
   }
@@ -12,10 +11,9 @@ export const GET: APIRoute = async ({ params, locals }) => {
   });
 };
 
-export const PUT: APIRoute = async ({ params, request, locals }) => {
-  const db = locals.runtime.env.DB;
+export const PUT: APIRoute = async ({ params, request }) => {
   const data = await request.json();
-  const workflow = await updateWorkflow(db, params.id!, data);
+  const workflow = await updateWorkflow(params.id!, data);
   if (!workflow) {
     return new Response(JSON.stringify({ error: 'Not found' }), { status: 404 });
   }
@@ -24,9 +22,8 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   });
 };
 
-export const DELETE: APIRoute = async ({ params, locals }) => {
-  const db = locals.runtime.env.DB;
-  const deleted = await deleteWorkflow(db, params.id!);
+export const DELETE: APIRoute = async ({ params }) => {
+  const deleted = await deleteWorkflow(params.id!);
   return new Response(JSON.stringify({ deleted }), {
     headers: { 'Content-Type': 'application/json' },
   });

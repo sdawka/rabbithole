@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
 import { callLLM } from '../../../engine/openrouter.js';
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  const db = locals.runtime.env.DB;
+export const POST: APIRoute = async ({ request }) => {
   const { topic, context } = await request.json();
 
   const prompt = `A user wants to explore a "rabbit hole" topic. Help them focus their exploration.
@@ -21,7 +20,7 @@ Return ONLY valid JSON, no markdown fences:
 }`;
 
   try {
-    const response = await callLLM(db, prompt, 'Return only valid JSON. No explanation outside the JSON.', null);
+    const response = await callLLM(prompt, 'Return only valid JSON. No explanation outside the JSON.', null);
     const cleaned = response.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();
     const data = JSON.parse(cleaned);
     return new Response(JSON.stringify(data), {

@@ -2,7 +2,11 @@ name = "rabbithole-app"
 compatibility_date = "2026-04-01"
 compatibility_flags = ["nodejs_compat"]
 
+[[kv_namespaces]]
+binding = "SESSION"
+id = "4f920ec049934b0282e95f5939c4ead6"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "rabbithole-db"
-database_id = "placeholder"
+database_id = "ff8dbca1-9be1-4b55-bed4-70f6322cc2de"

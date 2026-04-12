@@ -1,13 +1,14 @@
-import type { D1Database } from '@cloudflare/workers-types';
+import { getDb } from './index.js';
 import { nanoid } from 'nanoid';
 import type { Workflow, WorkflowFull, NodeRecord, EdgeRecord } from '../types/index.js';
 
-export async function listWorkflows(db: D1Database): Promise<Workflow[]> {
-  const { results } = await db.prepare('SELECT * FROM workflows ORDER BY updated_at DESC').all<Workflow>();
+export async function listWorkflows(): Promise<Workflow[]> {
+  const { results } = await getDb().prepare('SELECT * FROM workflows ORDER BY updated_at DESC').all<Workflow>();
   return results;
 }
 
-export async function getWorkflow(db: D1Database, id: string): Promise<WorkflowFull | undefined> {
+export async function getWorkflow(id: string): Promise<WorkflowFull | undefined> {
+  const db = getDb();
   const workflow = await db.prepare('SELECT * FROM workflows WHERE id = ?').bind(id).first<Workflow>();
   if (!workflow) return undefined;
   const { results: nodes } = await db.prepare('SELECT * FROM nodes WHERE workflow_id = ?').bind(id).all<NodeRecord>();
@@ -15,8 +16,9 @@ export async function getWorkflow(db: D1Database, id: string): Promise<WorkflowF
   return { ...workflow, nodes, edges };
 }
 
-export async function createWorkflow(db: D1Database, data?: Partial<{ name: string; description: string }>): Promise<Workflow> {
+export async function createWorkflow(data?: Partial<{ name: string; description: string }>): Promise<Workflow> {
   const id = nanoid(12);
+  const db = getDb();
   await db.prepare(
     'INSERT INTO workflows (id, name, description) VALUES (?, ?, ?)'
   ).bind(id, data?.name ?? 'Untitled Rabbit Hole', data?.description ?? '').run();
@@ -24,7 +26,8 @@ export async function createWorkflow(db: D1Database, data?: Partial<{ name: stri
   return row!;
 }
 
-export async function updateWorkflow(db: D1Database, id: string, data: Partial<{ name: string; description: string; viewport_x: number; viewport_y: number; viewport_zoom: number }>): Promise<Workflow | undefined> {
+export async function updateWorkflow(id: string, data: Partial<{ name: string; description: string; viewport_x: number; viewport_y: number; viewport_zoom: number }>): Promise<Workflow | undefined> {
+  const db = getDb();
   const fields: string[] = [];
   const values: unknown[] = [];
   for (const [key, value] of Object.entries(data)) {
@@ -42,7 +45,7 @@ export async function updateWorkflow(db: D1Database, id: string, data: Partial<{
   return row ?? undefined;
 }
 
-export async function deleteWorkflow(db: D1Database, id: string): Promise<boolean> {
-  const result = await db.prepare('DELETE FROM workflows WHERE id = ?').bind(id).run();
+export async function deleteWorkflow(id: string): Promise<boolean> {
+  const result = await getDb().prepare('DELETE FROM workflows WHERE id = ?').bind(id).run();
   return (result.meta?.changes ?? 0) > 0;
 }

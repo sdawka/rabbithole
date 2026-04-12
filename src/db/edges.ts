@@ -1,8 +1,8 @@
-import type { D1Database } from '@cloudflare/workers-types';
+import { getDb } from './index.js';
 import { nanoid } from 'nanoid';
 import type { EdgeRecord } from '../types/index.js';
 
-export async function createEdge(db: D1Database, data: {
+export async function createEdge(data: {
   workflow_id: string;
   source_node: string;
   target_node: string;
@@ -10,6 +10,7 @@ export async function createEdge(db: D1Database, data: {
   target_handle?: string;
 }): Promise<EdgeRecord> {
   const id = nanoid(12);
+  const db = getDb();
   await db.prepare(
     `INSERT INTO edges (id, workflow_id, source_node, target_node, source_handle, target_handle)
      VALUES (?, ?, ?, ?, ?, ?)`
@@ -18,12 +19,12 @@ export async function createEdge(db: D1Database, data: {
   return row!;
 }
 
-export async function deleteEdge(db: D1Database, id: string): Promise<boolean> {
-  const result = await db.prepare('DELETE FROM edges WHERE id = ?').bind(id).run();
+export async function deleteEdge(id: string): Promise<boolean> {
+  const result = await getDb().prepare('DELETE FROM edges WHERE id = ?').bind(id).run();
   return (result.meta?.changes ?? 0) > 0;
 }
 
-export async function getEdgesByWorkflow(db: D1Database, workflowId: string): Promise<EdgeRecord[]> {
-  const { results } = await db.prepare('SELECT * FROM edges WHERE workflow_id = ?').bind(workflowId).all<EdgeRecord>();
+export async function getEdgesByWorkflow(workflowId: string): Promise<EdgeRecord[]> {
+  const { results } = await getDb().prepare('SELECT * FROM edges WHERE workflow_id = ?').bind(workflowId).all<EdgeRecord>();
   return results;
 }

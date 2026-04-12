@@ -1,4 +1,3 @@
-import type { D1Database } from '@cloudflare/workers-types';
 import { getNode, updateNode, getUpstreamOutputs } from '../db/nodes.js';
 import { nodeTypes } from '../nodes/registry.js';
 import { callLLM } from './openrouter.js';
@@ -41,10 +40,9 @@ function buildContext(node: NodeRecord, upstreamOutputs: { handle: string; outpu
   return context;
 }
 
-async function runSourceDiscovery(db: D1Database, node: NodeRecord, context: Record<string, string>, systemPrompt: string): Promise<string> {
+async function runSourceDiscovery(node: NodeRecord, context: Record<string, string>, systemPrompt: string): Promise<string> {
   const rendered = resolveTemplate(systemPrompt, context);
   const queriesText = await callLLM(
-    db,
     rendered,
     'You generate web search queries. Return one query per line, nothing else. No numbering, no bullets.',
     node.preset_id
@@ -62,7 +60,7 @@ async function runSourceDiscovery(db: D1Database, node: NodeRecord, context: Rec
   const allResults = [];
   for (const query of queries) {
     try {
-      const results = await tavilySearch(db, query, 3);
+      const results = await tavilySearch(query, 3);
       allResults.push(...results);
     } catch {
       // Continue with other queries
@@ -83,7 +81,7 @@ async function runSourceDiscovery(db: D1Database, node: NodeRecord, context: Rec
   return unique.map(r => `**${r.title}**\nURL: ${r.url}\n${r.content}`).join('\n\n---\n\n');
 }
 
-async function runSourceAnalysis(db: D1Database, node: NodeRecord, context: Record<string, string>, systemPrompt: string): Promise<string> {
+async function runSourceAnalysis(node: NodeRecord, context: Record<string, string>, systemPrompt: string): Promise<string> {
   const sourcesText = context['sources'] ?? '';
 
   const urlMatches = sourcesText.match(/URL:\s*(https?:\/\/[^\s\n]+)/g) ?? [];
@@ -92,7 +90,7 @@ async function runSourceAnalysis(db: D1Database, node: NodeRecord, context: Reco
   let sourceContent = '';
   if (urls.length > 0) {
     try {
-      const extracted = await tavilyExtract(db, urls);
+      const extracted = await tavilyExtract(urls);
       sourceContent = extracted
         .map(e => `--- ${e.url} ---\n${e.raw_content?.slice(0, 3000) ?? 'No content extracted'}`)
         .join('\n\n');
@@ -105,42 +103,42 @@ async function runSourceAnalysis(db: D1Database, node: NodeRecord, context: Reco
 
   context['source_content'] = sourceContent;
   const prompt = resolveTemplate(systemPrompt, context);
-  return callLLM(db, prompt, 'You are a thorough research analyst. Be concise.', node.preset_id);
+  return callLLM(prompt, 'You are a thorough research analyst. Be concise.', node.preset_id);
 }
 
-export async function runNode(db: D1Database, nodeId: string): Promise<NodeRecord> {
-  const node = await getNode(db, nodeId);
+export async function runNode(nodeId: string): Promise<NodeRecord> {
+  const node = await getNode(nodeId);
   if (!node) throw new Error(`Node ${nodeId} not found`);
 
   const typeDef = nodeTypes[node.node_type];
   if (!typeDef) throw new Error(`Unknown node type: ${node.node_type}`);
 
-  await updateNode(db, nodeId, { status: 'running', error_message: '' });
+  await updateNode(nodeId, { status: 'running', error_message: '' });
 
   try {
-    const upstreamOutputs = await getUpstreamOutputs(db, nodeId);
+    const upstreamOutputs = await getUpstreamOutputs(nodeId);
     const context = buildContext(node, upstreamOutputs);
     const systemPrompt = node.system_prompt || typeDef.defaultPrompt;
     let output: string;
 
     if (typeDef.useTavily === 'search') {
-      output = await runSourceDiscovery(db, node, context, systemPrompt);
+      output = await runSourceDiscovery(node, context, systemPrompt);
 
     } else if (typeDef.useTavily === 'extract') {
-      output = await runSourceAnalysis(db, node, context, systemPrompt);
+      output = await runSourceAnalysis(node, context, systemPrompt);
 
     } else {
       const prompt = resolveTemplate(systemPrompt, context);
-      output = await callLLM(db, prompt, 'You are a curious and thorough research assistant. Be concise.', node.preset_id);
+      output = await callLLM(prompt, 'You are a curious and thorough research assistant. Be concise.', node.preset_id);
     }
 
     const now = new Date().toISOString();
-    await updateNode(db, nodeId, { output_data: output, status: 'done', run_at: now });
-    return (await getNode(db, nodeId))!;
+    await updateNode(nodeId, { output_data: output, status: 'done', run_at: now });
+    return (await getNode(nodeId))!;
 
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    await updateNode(db, nodeId, { status: 'error', error_message: message });
-    return (await getNode(db, nodeId))!;
+    await updateNode(nodeId, { status: 'error', error_message: message });
+    return (await getNode(nodeId))!;
   }
 }

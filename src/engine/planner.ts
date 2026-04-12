@@ -1,4 +1,3 @@
-import type { D1Database } from '@cloudflare/workers-types';
 import { callLLM } from './openrouter.js';
 
 export interface PlannerResult {
@@ -16,7 +15,6 @@ const ANALYSIS_DESCRIPTIONS: Record<string, string> = {
 };
 
 export async function planAnalysisLayer(
-  db: D1Database,
   topic: string,
   angles: string[],
   sourceAnalysisOutput: string,
@@ -48,7 +46,7 @@ Guidelines:
 Return ONLY valid JSON, no markdown fences:
 {"nodes": ["aha_moments", "key_concepts"], "reasoning": "One sentence why"}`;
 
-  const response = await callLLM(db, prompt, 'Return only valid JSON. No explanation outside the JSON.', presetId);
+  const response = await callLLM(prompt, 'Return only valid JSON. No explanation outside the JSON.', presetId);
 
   try {
     const cleaned = response.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();

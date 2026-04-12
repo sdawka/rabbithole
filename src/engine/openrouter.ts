@@ -1,22 +1,20 @@
-import type { D1Database } from '@cloudflare/workers-types';
 import { getSetting, getDefaultPreset, getPreset } from '../db/config.js';
 import type { Preset } from '../types/index.js';
 
 export async function callLLM(
-  db: D1Database,
   userPrompt: string,
   systemPrompt: string,
   presetId?: string | null
 ): Promise<string> {
-  const apiKey = await getSetting(db, 'openrouter_api_key');
+  const apiKey = await getSetting('openrouter_api_key');
   if (!apiKey) throw new Error('OpenRouter API key not configured');
 
   let preset: Preset | undefined;
   if (presetId) {
-    preset = await getPreset(db, presetId);
+    preset = await getPreset(presetId);
   }
   if (!preset) {
-    preset = await getDefaultPreset(db);
+    preset = await getDefaultPreset();
   }
   if (!preset) throw new Error('No model preset configured');
 
@@ -25,7 +23,7 @@ export async function callLLM(
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://rabbithole-app.workers.dev',
+      'HTTP-Referer': 'https://rabbithole-app.dawka.workers.dev',
       'X-Title': 'Rabbithole Explorer',
     },
     body: JSON.stringify({
