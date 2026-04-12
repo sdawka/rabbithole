@@ -108,20 +108,17 @@ const presetForm = ref({
 });
 
 onMounted(async () => {
-  const [settingsRes, presetsRes] = await Promise.all([
-    fetch('/api/config'),
-    fetch('/api/config/presets'),
-  ]);
-  settings.value = await settingsRes.json();
+  settings.value = {
+    openrouter_api_key: localStorage.getItem('rh_openrouter_key') ?? '',
+    tavily_api_key: localStorage.getItem('rh_tavily_key') ?? '',
+  };
+  const presetsRes = await fetch('/api/config/presets');
   presets.value = await presetsRes.json();
 });
 
-async function saveSettings() {
-  await fetch('/api/config', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings.value),
-  });
+function saveSettings() {
+  localStorage.setItem('rh_openrouter_key', settings.value.openrouter_api_key);
+  localStorage.setItem('rh_tavily_key', settings.value.tavily_api_key);
   saveStatus.value = 'Saved!';
   setTimeout(() => saveStatus.value = '', 2000);
 }

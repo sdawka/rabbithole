@@ -1,24 +1,6 @@
 import { getDb } from './index.js';
 import { nanoid } from 'nanoid';
-import type { Preset, Settings } from '../types/index.js';
-
-export async function getSetting(key: string): Promise<string | undefined> {
-  const row = await getDb().prepare('SELECT value FROM settings WHERE key = ?').bind(key).first<{ value: string }>();
-  return row?.value;
-}
-
-export async function setSetting(key: string, value: string): Promise<void> {
-  await getDb().prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').bind(key, value).run();
-}
-
-export async function getAllSettings(): Promise<Partial<Settings>> {
-  const { results: rows } = await getDb().prepare('SELECT key, value FROM settings').all<{ key: string; value: string }>();
-  const settings: Record<string, string> = {};
-  for (const row of rows) {
-    settings[row.key] = row.value;
-  }
-  return settings as Partial<Settings>;
-}
+import type { Preset } from '../types/index.js';
 
 export async function listPresets(): Promise<Preset[]> {
   const { results } = await getDb().prepare('SELECT * FROM presets ORDER BY name').all<Preset>();

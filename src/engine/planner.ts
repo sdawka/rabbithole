@@ -1,4 +1,4 @@
-import { callLLM } from './openrouter.js';
+import { callLLM, type ApiKeys } from './openrouter.js';
 
 export interface PlannerResult {
   nodes: string[];
@@ -15,6 +15,7 @@ const ANALYSIS_DESCRIPTIONS: Record<string, string> = {
 };
 
 export async function planAnalysisLayer(
+  keys: ApiKeys,
   topic: string,
   angles: string[],
   sourceAnalysisOutput: string,
@@ -46,7 +47,7 @@ Guidelines:
 Return ONLY valid JSON, no markdown fences:
 {"nodes": ["aha_moments", "key_concepts"], "reasoning": "One sentence why"}`;
 
-  const response = await callLLM(prompt, 'Return only valid JSON. No explanation outside the JSON.', presetId);
+  const response = await callLLM(keys, prompt, 'Return only valid JSON. No explanation outside the JSON.', presetId);
 
   try {
     const cleaned = response.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim();

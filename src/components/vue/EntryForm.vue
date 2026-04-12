@@ -112,25 +112,20 @@ const keysConfigured = computed(() =>
   !!settings.value.openrouter_api_key && !!settings.value.tavily_api_key
 );
 
-onMounted(async () => {
-  try {
-    const res = await fetch('/api/config');
-    const data = await res.json();
-    settings.value = { openrouter_api_key: '', tavily_api_key: '', ...data };
-    // Auto-expand if keys are missing
-    if (!keysConfigured.value) {
-      showKeys.value = true;
-    }
-  } catch { /* ignore */ }
+onMounted(() => {
+  settings.value = {
+    openrouter_api_key: localStorage.getItem('rh_openrouter_key') ?? '',
+    tavily_api_key: localStorage.getItem('rh_tavily_key') ?? '',
+  };
+  if (!keysConfigured.value) {
+    showKeys.value = true;
+  }
 });
 
-async function saveSettings() {
+function saveSettings() {
   try {
-    await fetch('/api/config', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings.value),
-    });
+    localStorage.setItem('rh_openrouter_key', settings.value.openrouter_api_key);
+    localStorage.setItem('rh_tavily_key', settings.value.tavily_api_key);
     saveStatus.value = 'Saved';
     setTimeout(() => saveStatus.value = '', 2000);
   } catch { /* ignore */ }

@@ -1,4 +1,4 @@
-import { getSetting } from '../db/config.js';
+import type { ApiKeys } from './openrouter.js';
 
 export interface TavilySearchResult {
   title: string;
@@ -7,14 +7,9 @@ export interface TavilySearchResult {
   score: number;
 }
 
-async function getApiKey(): Promise<string> {
-  const apiKey = await getSetting('tavily_api_key');
-  if (!apiKey) throw new Error('Tavily API key not configured');
-  return apiKey;
-}
-
-export async function tavilySearch(query: string, maxResults = 5): Promise<TavilySearchResult[]> {
-  const apiKey = await getApiKey();
+export async function tavilySearch(keys: ApiKeys, query: string, maxResults = 5): Promise<TavilySearchResult[]> {
+  const apiKey = keys.tavily_api_key;
+  if (!apiKey) throw new Error('Tavily API key not configured — add it in the settings on the home page');
 
   const response = await fetch('https://api.tavily.com/search', {
     method: 'POST',
@@ -39,8 +34,9 @@ export async function tavilySearch(query: string, maxResults = 5): Promise<Tavil
   return data.results ?? [];
 }
 
-export async function tavilyExtract(urls: string[]): Promise<Array<{ url: string; raw_content: string }>> {
-  const apiKey = await getApiKey();
+export async function tavilyExtract(keys: ApiKeys, urls: string[]): Promise<Array<{ url: string; raw_content: string }>> {
+  const apiKey = keys.tavily_api_key;
+  if (!apiKey) throw new Error('Tavily API key not configured — add it in the settings on the home page');
 
   const response = await fetch('https://api.tavily.com/extract', {
     method: 'POST',

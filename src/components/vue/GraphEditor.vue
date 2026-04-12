@@ -193,6 +193,13 @@ onMounted(async () => {
   presets.value = await presetRes.json();
 });
 
+function keyHeaders(): Record<string, string> {
+  return {
+    'X-OpenRouter-Key': localStorage.getItem('rh_openrouter_key') ?? '',
+    'X-Tavily-Key': localStorage.getItem('rh_tavily_key') ?? '',
+  };
+}
+
 // ---- State transitions ----
 
 async function onTopicSubmit(topic: string, context: string) {
@@ -205,7 +212,7 @@ async function onTopicSubmit(topic: string, context: string) {
   try {
     const res = await fetch('/api/explore/clarify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...keyHeaders() },
       body: JSON.stringify({ topic, context }),
     });
     const data = await res.json();
@@ -235,7 +242,7 @@ async function onAnglesConfirmed(angles: string[]) {
   try {
     const res = await fetch('/api/explore/run', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...keyHeaders() },
       body: JSON.stringify({
         topic: currentTopic.value,
         context: currentContext.value,
@@ -460,7 +467,7 @@ async function onRunNode(nodeId: string) {
   const node = nodes.value.find(n => n.id === nodeId);
   if (node) node.status = 'running';
   try {
-    const res = await fetch(`/api/nodes/${nodeId}/run`, { method: 'POST' });
+    const res = await fetch(`/api/nodes/${nodeId}/run`, { method: 'POST', headers: keyHeaders() });
     const updated = await res.json();
     const idx = nodes.value.findIndex(n => n.id === nodeId);
     if (idx >= 0) nodes.value[idx] = updated;

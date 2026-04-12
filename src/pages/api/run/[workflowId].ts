@@ -2,8 +2,10 @@ import type { APIRoute } from 'astro';
 import { getWorkflow } from '../../../db/workflows.js';
 import { topologicalSort } from '../../../engine/dag.js';
 import { runNode } from '../../../engine/runner.js';
+import { extractKeys } from '../../../engine/openrouter.js';
 
-export const POST: APIRoute = async ({ params }) => {
+export const POST: APIRoute = async ({ params, request }) => {
+  const keys = extractKeys(request);
   const workflow = await getWorkflow(params.workflowId!);
   if (!workflow) {
     return new Response(JSON.stringify({ error: 'Workflow not found' }), { status: 404 });
@@ -23,7 +25,7 @@ export const POST: APIRoute = async ({ params }) => {
           const results = await Promise.allSettled(
             layer.map(async (nodeId) => {
               send({ type: 'node_start', nodeId });
-              const result = await runNode(nodeId);
+              const result = await runNode(keys, nodeId);
               send({
                 type: 'node_complete',
                 nodeId,

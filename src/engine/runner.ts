@@ -1,6 +1,6 @@
 import { getNode, updateNode, getUpstreamOutputs } from '../db/nodes.js';
 import { nodeTypes } from '../nodes/registry.js';
-import { callLLM } from './openrouter.js';
+import { callLLM, type ApiKeys } from './openrouter.js';
 import { tavilySearch, tavilyExtract } from './tavily.js';
 import type { NodeRecord } from '../types/index.js';
 
@@ -40,9 +40,10 @@ function buildContext(node: NodeRecord, upstreamOutputs: { handle: string; outpu
   return context;
 }
 
-async function runSourceDiscovery(node: NodeRecord, context: Record<string, string>, systemPrompt: string): Promise<string> {
+async function runSourceDiscovery(keys: ApiKeys, node: NodeRecord, context: Record<string, string>, systemPrompt: string): Promise<string> {
   const rendered = resolveTemplate(systemPrompt, context);
   const queriesText = await callLLM(
+    keys,
     rendered,
     'You generate web search queries. Return one query per line, nothing else. No numbering, no bullets.',
     node.preset_id
@@ -60,7 +61,7 @@ async function runSourceDiscovery(node: NodeRecord, context: Record<string, stri
   const allResults = [];
   for (const query of queries) {
     try {
-      const results = await tavilySearch(query, 3);
+      const results = await tavilySearch(keys, query, 3);
       allResults.push(...results);
     } catch {
       // Continue with other queries
@@ -81,7 +82,7 @@ async function runSourceDiscovery(node: NodeRecord, context: Record<string, stri
   return unique.map(r => `**${r.title}**\nURL: ${r.url}\n${r.content}`).join('\n\n---\n\n');
 }
 
-async function runSourceAnalysis(node: NodeRecord, context: Record<string, string>, systemPrompt: string): Promise<string> {
+async function runSourceAnalysis(keys: ApiKeys, node: NodeRecord, context: Record<string, string>, systemPrompt: string): Promise<string> {
   const sourcesText = context['sources'] ?? '';
 
   const urlMatches = sourcesText.match(/URL:\s*(https?:\/\/[^\s\n]+)/g) ?? [];
@@ -90,7 +91,7 @@ async function runSourceAnalysis(node: NodeRecord, context: Record<string, strin
   let sourceContent = '';
   if (urls.length > 0) {
     try {
-      const extracted = await tavilyExtract(urls);
+      const extracted = await tavilyExtract(keys, urls);
       sourceContent = extracted
         .map(e => `--- ${e.url} ---\n${e.raw_content?.slice(0, 3000) ?? 'No content extracted'}`)
         .join('\n\n');
@@ -103,10 +104,10 @@ async function runSourceAnalysis(node: NodeRecord, context: Record<string, strin
 
   context['source_content'] = sourceContent;
   const prompt = resolveTemplate(systemPrompt, context);
-  return callLLM(prompt, 'You are a thorough research analyst. Be concise.', node.preset_id);
+  return callLLM(keys, prompt, 'You are a thorough research analyst. Be concise.', node.preset_id);
 }
 
-export async function runNode(nodeId: string): Promise<NodeRecord> {
+export async function runNode(keys: ApiKeys, nodeId: string): Promise<NodeRecord> {
   const node = await getNode(nodeId);
   if (!node) throw new Error(`Node ${nodeId} not found`);
 
@@ -122,14 +123,14 @@ export async function runNode(nodeId: string): Promise<NodeRecord> {
     let output: string;
 
     if (typeDef.useTavily === 'search') {
-      output = await runSourceDiscovery(node, context, systemPrompt);
+      output = await runSourceDiscovery(keys, node, context, systemPrompt);
 
     } else if (typeDef.useTavily === 'extract') {
-      output = await runSourceAnalysis(node, context, systemPrompt);
+      output = await runSourceAnalysis(keys, node, context, systemPrompt);
 
     } else {
       const prompt = resolveTemplate(systemPrompt, context);
-      output = await callLLM(prompt, 'You are a curious and thorough research assistant. Be concise.', node.preset_id);
+      output = await callLLM(keys, prompt, 'You are a curious and thorough research assistant. Be concise.', node.preset_id);
     }
 
     const now = new Date().toISOString();

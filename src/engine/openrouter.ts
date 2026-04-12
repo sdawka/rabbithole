@@ -1,13 +1,26 @@
-import { getSetting, getDefaultPreset, getPreset } from '../db/config.js';
+import { getDefaultPreset, getPreset } from '../db/config.js';
 import type { Preset } from '../types/index.js';
 
+export interface ApiKeys {
+  openrouter_api_key: string;
+  tavily_api_key: string;
+}
+
+export function extractKeys(request: Request): ApiKeys {
+  return {
+    openrouter_api_key: request.headers.get('X-OpenRouter-Key') ?? '',
+    tavily_api_key: request.headers.get('X-Tavily-Key') ?? '',
+  };
+}
+
 export async function callLLM(
+  keys: ApiKeys,
   userPrompt: string,
   systemPrompt: string,
   presetId?: string | null
 ): Promise<string> {
-  const apiKey = await getSetting('openrouter_api_key');
-  if (!apiKey) throw new Error('OpenRouter API key not configured');
+  const apiKey = keys.openrouter_api_key;
+  if (!apiKey) throw new Error('OpenRouter API key not configured — add it in the settings on the home page');
 
   let preset: Preset | undefined;
   if (presetId) {

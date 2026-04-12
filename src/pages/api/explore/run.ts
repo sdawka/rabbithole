@@ -5,6 +5,7 @@ import { createEdge } from '../../../db/edges.js';
 import { nodeTypes } from '../../../nodes/registry.js';
 import { runNode } from '../../../engine/runner.js';
 import { planAnalysisLayer } from '../../../engine/planner.js';
+import { extractKeys } from '../../../engine/openrouter.js';
 
 interface CreatedNode {
   id: string;
@@ -19,6 +20,7 @@ function pos(col: number, row: number) {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  const keys = extractKeys(request);
   const { topic, context, angles } = await request.json() as {
     topic: string;
     context: string;
@@ -88,7 +90,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         async function execNode(nodeId: string) {
           send({ type: 'node_start', nodeId });
-          const result = await runNode(nodeId);
+          const result = await runNode(keys, nodeId);
           send({
             type: 'node_complete',
             nodeId,
@@ -149,6 +151,7 @@ export const POST: APIRoute = async ({ request }) => {
         send({ type: 'planning', layer: 5, description: 'Analyzing results to decide next steps...' });
 
         const plan = await planAnalysisLayer(
+          keys,
           topic,
           angles,
           analysisResult.output_data || '',
