@@ -2,7 +2,6 @@
   <div class="clarify-step">
     <div class="clarify-card">
       <div class="clarify-header">
-        <span class="clarify-icon">🎯</span>
         <h2>Let's focus your exploration</h2>
         <p class="clarify-summary">{{ summary }}</p>
       </div>
@@ -95,29 +94,26 @@ function confirm() {
 .clarify-card {
   width: 100%;
   max-width: 560px;
+  animation: clarifyFadeIn 0.5s ease both;
 }
 
 .clarify-header {
   text-align: center;
-  margin-bottom: 24px;
-}
-
-.clarify-icon {
-  font-size: 36px;
-  display: block;
-  margin-bottom: 8px;
+  margin-bottom: 28px;
 }
 
 .clarify-header h2 {
-  font-size: 22px;
-  font-weight: 700;
-  margin-bottom: 8px;
+  font-family: var(--rh-font-display);
+  font-size: 26px;
+  font-weight: 400;
+  font-style: italic;
+  margin-bottom: 10px;
 }
 
 .clarify-summary {
   color: var(--rh-text-dim);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .angles-list {
@@ -134,18 +130,29 @@ function confirm() {
   padding: 12px 14px;
   background: var(--rh-surface);
   border: 1px solid var(--rh-border);
+  border-left: 3px solid transparent;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
+  animation: angleSlideIn 0.4s ease both;
 }
+
+.angle-item:nth-child(1) { animation-delay: 0.1s; }
+.angle-item:nth-child(2) { animation-delay: 0.15s; }
+.angle-item:nth-child(3) { animation-delay: 0.2s; }
+.angle-item:nth-child(4) { animation-delay: 0.25s; }
+.angle-item:nth-child(5) { animation-delay: 0.3s; }
+.angle-item:nth-child(6) { animation-delay: 0.35s; }
 
 .angle-item:hover {
   border-color: var(--rh-text-dim);
+  border-left-color: var(--rh-text-dim);
 }
 
 .angle-item.checked {
-  border-color: var(--rh-accent);
-  background: color-mix(in srgb, var(--rh-accent) 8%, var(--rh-surface));
+  border-color: var(--rh-border);
+  border-left-color: var(--rh-accent-2);
+  background: color-mix(in srgb, var(--rh-accent-2) 5%, var(--rh-surface));
 }
 
 .angle-item input[type="checkbox"] {
@@ -153,24 +160,25 @@ function confirm() {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  accent-color: var(--rh-accent);
+  accent-color: var(--rh-accent-2);
 }
 
 .angle-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .angle-label {
   font-size: 14px;
   font-weight: 600;
+  letter-spacing: 0.1px;
 }
 
 .angle-desc {
   font-size: 12px;
   color: var(--rh-text-dim);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .clarify-actions {
@@ -178,6 +186,7 @@ function confirm() {
   flex-direction: column;
   gap: 8px;
   align-items: center;
+  animation: clarifyFadeIn 0.5s ease 0.35s both;
 }
 
 .btn-lg {
@@ -185,5 +194,27 @@ function confirm() {
   padding: 14px;
   font-size: 15px;
   font-weight: 600;
+}
+
+@keyframes clarifyFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes angleSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 </style>

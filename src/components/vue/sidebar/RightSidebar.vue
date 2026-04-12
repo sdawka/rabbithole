@@ -120,14 +120,17 @@ defineEmits<{
   flex: 1;
   background: transparent;
   border: none;
+  border-bottom: 1px solid transparent;
   color: var(--rh-text);
   font-size: 15px;
   font-weight: 600;
   padding: 4px 0;
+  transition: border-color 0.2s;
 }
 
 .inspector-title:focus {
   border-bottom: 1px solid var(--rh-accent);
+  outline: none;
 }
 
 .inspector-body {
@@ -136,15 +139,23 @@ defineEmits<{
 
 .inspector-section {
   margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--rh-border) 50%, transparent);
+}
+
+.inspector-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .inspector-section label {
   display: block;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   color: var(--rh-text-dim);
   margin-bottom: 6px;
+  font-weight: 500;
 }
 
 .inspector-section select,
@@ -164,13 +175,16 @@ defineEmits<{
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
+  border: 1px solid currentColor;
+  box-shadow: 0 0 8px color-mix(in srgb, currentColor 15%, transparent);
 }
 
 .output-display {
   background: var(--rh-bg);
   border: 1px solid var(--rh-border);
+  border-left: 3px solid var(--rh-accent-2);
   border-radius: 6px;
-  padding: 10px;
+  padding: 10px 10px 10px 12px;
   font-size: 12px;
   max-height: 300px;
   overflow-y: auto;
@@ -182,5 +196,6 @@ defineEmits<{
 .output-display.error {
   color: var(--rh-error);
   border-color: var(--rh-error);
+  border-left-color: var(--rh-error);
 }
 </style>

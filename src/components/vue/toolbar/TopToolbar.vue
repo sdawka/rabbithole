@@ -1,7 +1,7 @@
 <template>
   <div class="top-toolbar">
     <div class="toolbar-left">
-      <span class="logo">🕳️ Rabbithole</span>
+      <span class="logo">Rabbithole</span>
       <template v-if="workflow">
         <span class="toolbar-sep">|</span>
         <span class="workflow-name">{{ workflow.name }}</span>
@@ -39,10 +39,23 @@ defineEmits<{
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: var(--rh-surface);
-  border-bottom: 1px solid var(--rh-border);
+  background: color-mix(in srgb, var(--rh-surface) 90%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: none;
   height: 48px;
   flex-shrink: 0;
+  position: relative;
+}
+
+.top-toolbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--rh-border), transparent);
 }
 
 .toolbar-left {
@@ -52,9 +65,12 @@ defineEmits<{
 }
 
 .logo {
-  font-weight: 700;
-  font-size: 15px;
+  font-family: var(--rh-font-display);
+  font-weight: 400;
+  font-size: 17px;
+  font-style: italic;
   white-space: nowrap;
+  color: var(--rh-text);
 }
 
 .toolbar-sep {
@@ -89,11 +105,12 @@ defineEmits<{
   height: 8px;
   border-radius: 50%;
   background: var(--rh-accent);
-  animation: pulse 1s ease-in-out infinite;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--rh-accent) 50%, transparent);
+  animation: breathe 2s ease-in-out infinite;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+@keyframes breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.85); }
 }
 </style>

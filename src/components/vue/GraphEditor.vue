@@ -502,13 +502,26 @@ function goToSettings() {
   height: 3px;
   background: var(--rh-border);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .progress-bar {
   height: 100%;
-  background: var(--rh-accent);
+  background: linear-gradient(90deg, var(--rh-accent), color-mix(in srgb, var(--rh-accent) 80%, #fff));
   transition: width 0.6s ease;
-  box-shadow: 0 0 8px var(--rh-accent);
+  box-shadow: 0 0 12px var(--rh-accent), 0 0 4px var(--rh-accent);
+  position: relative;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 60px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--rh-accent) 60%, #fff));
+  filter: blur(4px);
 }
 
 /* Floating toast */
@@ -520,11 +533,13 @@ function goToSettings() {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--rh-surface);
-  border: 1px solid var(--rh-border);
-  border-radius: 10px;
+  background: color-mix(in srgb, var(--rh-surface) 88%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--rh-accent) 20%, var(--rh-border));
+  border-radius: 12px;
   padding: 10px 18px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.1);
   z-index: 100;
   white-space: nowrap;
 }
@@ -532,7 +547,7 @@ function goToSettings() {
 .toast-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid var(--rh-border);
+  border: 2px solid color-mix(in srgb, var(--rh-accent) 25%, transparent);
   border-top-color: var(--rh-accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -557,17 +572,17 @@ function goToSettings() {
 
 /* Toast transition */
 .toast-enter-active {
-  transition: all 0.3s ease;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .toast-leave-active {
   transition: all 0.2s ease;
 }
 .toast-enter-from {
   opacity: 0;
-  transform: translateX(-50%) translateY(10px);
+  transform: translateX(-50%) translateY(16px) scale(0.96);
 }
 .toast-leave-to {
   opacity: 0;
-  transform: translateX(-50%) translateY(10px);
+  transform: translateX(-50%) translateY(8px) scale(0.98);
 }
 </style>

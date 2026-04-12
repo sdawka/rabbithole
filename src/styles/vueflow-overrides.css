@@ -7,20 +7,24 @@
 }
 
 .vue-flow__background pattern circle {
-  fill: var(--rh-border);
+  fill: color-mix(in srgb, var(--rh-accent) 8%, var(--rh-bg));
 }
 
 .vue-flow__minimap {
   background: var(--rh-surface);
   border: 1px solid var(--rh-border);
   border-radius: var(--rh-radius);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--rh-accent) 6%, transparent);
 }
 
 .vue-flow__controls {
   background: var(--rh-surface);
   border: 1px solid var(--rh-border);
   border-radius: var(--rh-radius);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
 }
 
 .vue-flow__controls-button {
@@ -28,6 +32,7 @@
   color: var(--rh-text);
   border-bottom: 1px solid var(--rh-border);
   fill: var(--rh-text);
+  transition: background 0.15s ease;
 }
 
 .vue-flow__controls-button:hover {
@@ -35,6 +40,22 @@
 }
 
 .vue-flow__selection {
-  background: rgba(233, 69, 96, 0.1);
+  background: color-mix(in srgb, var(--rh-accent) 8%, transparent);
   border: 1px dashed var(--rh-accent);
+}
+
+/* Running edge amber glow */
+.vue-flow__edge.running .vue-flow__edge-path {
+  stroke: var(--rh-accent);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--rh-accent) 50%, transparent));
+  animation: edge-flow 1.5s ease-in-out infinite;
+}
+
+@keyframes edge-flow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--rh-accent) 35%, transparent));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--rh-accent) 60%, transparent));
+  }
 }

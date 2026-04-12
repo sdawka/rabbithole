@@ -2,7 +2,6 @@
   <div class="entry-form">
     <div class="entry-card">
       <div class="entry-header">
-        <span class="entry-icon">🕳️</span>
         <h1>Rabbithole</h1>
         <p class="entry-subtitle">Follow your curiosity down the rabbit hole</p>
       </div>
@@ -88,37 +87,53 @@ function formatDate(dateStr: string) {
   width: 100%;
   height: 100%;
   padding: 40px;
+  position: relative;
+}
+
+.entry-form::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--rh-accent) 8%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .entry-card {
   width: 100%;
   max-width: 560px;
+  position: relative;
+  z-index: 1;
 }
 
 .entry-header {
   text-align: center;
-  margin-bottom: 32px;
-}
-
-.entry-icon {
-  font-size: 48px;
-  display: block;
-  margin-bottom: 8px;
+  margin-bottom: 36px;
+  animation: fadeInUp 0.6s ease both;
 }
 
 .entry-header h1 {
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 4px;
+  font-family: var(--rh-font-display);
+  font-size: 42px;
+  font-weight: 400;
+  font-style: italic;
+  margin-bottom: 8px;
+  text-shadow: 0 0 30px color-mix(in srgb, var(--rh-accent) 40%, transparent);
 }
 
 .entry-subtitle {
   color: var(--rh-text-dim);
-  font-size: 14px;
+  font-size: 16px;
+  letter-spacing: 0.2px;
 }
 
 .entry-fields {
   margin-bottom: 20px;
+  animation: fadeInUp 0.6s ease 0.15s both;
 }
 
 .field {
@@ -138,15 +153,19 @@ function formatDate(dateStr: string) {
   width: 100%;
   font-size: 15px;
   padding: 12px 14px;
-  background: var(--rh-surface);
+  background: color-mix(in srgb, var(--rh-surface) 85%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--rh-border);
   border-radius: 8px;
   color: var(--rh-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .field input:focus,
 .field textarea:focus {
   border-color: var(--rh-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rh-accent) 10%, transparent);
   outline: none;
 }
 
@@ -160,10 +179,24 @@ function formatDate(dateStr: string) {
   padding: 14px;
   font-size: 15px;
   font-weight: 600;
+  background: linear-gradient(135deg, var(--rh-accent), color-mix(in srgb, var(--rh-accent) 85%, #ff8800));
+  border: none;
+  transition: box-shadow 0.25s, transform 0.15s;
+  animation: fadeInUp 0.6s ease 0.3s both;
+}
+
+.btn-lg:hover:not(:disabled) {
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--rh-accent) 35%, transparent);
+  transform: translateY(-1px);
+}
+
+.btn-lg:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .past-section {
   margin-top: 32px;
+  animation: fadeInUp 0.6s ease 0.45s both;
 }
 
 .past-divider {
@@ -192,26 +225,27 @@ function formatDate(dateStr: string) {
 .past-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .past-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background: transparent;
+  padding: 10px 14px;
+  background: var(--rh-surface);
   border: 1px solid var(--rh-border);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--rh-text);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
   text-align: left;
 }
 
 .past-item:hover {
-  background: var(--rh-surface);
-  border-color: var(--rh-accent);
+  background: var(--rh-surface-2);
+  border-color: color-mix(in srgb, var(--rh-accent) 40%, var(--rh-border));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .past-name {
@@ -226,5 +260,16 @@ function formatDate(dateStr: string) {
   color: var(--rh-text-dim);
   flex-shrink: 0;
   margin-left: 12px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

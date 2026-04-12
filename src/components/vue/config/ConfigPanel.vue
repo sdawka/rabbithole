@@ -197,7 +197,19 @@ async function removePreset(id: string) {
   margin-bottom: 32px;
 }
 .config-header h1 {
-  font-size: 24px;
+  font-family: var(--rh-font-display);
+  font-size: 28px;
+  font-weight: 400;
+  font-style: italic;
+}
+.config-header .btn-secondary {
+  color: var(--rh-accent);
+  border-color: color-mix(in srgb, var(--rh-accent) 30%, var(--rh-border));
+  transition: all 0.2s;
+}
+.config-header .btn-secondary:hover {
+  background: color-mix(in srgb, var(--rh-accent) 8%, transparent);
+  border-color: var(--rh-accent);
 }
 .config-section {
   background: var(--rh-surface);
@@ -209,6 +221,9 @@ async function removePreset(id: string) {
 .config-section h2 {
   font-size: 16px;
   margin-bottom: 16px;
+  padding-top: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--rh-accent) 20%, var(--rh-border));
   color: var(--rh-text);
 }
 .field {
@@ -229,6 +244,9 @@ async function removePreset(id: string) {
   color: var(--rh-text-dim);
   margin-top: 4px;
   display: block;
+}
+.field small a {
+  color: var(--rh-accent-2);
 }
 .field-row {
   display: flex;
@@ -252,7 +270,12 @@ async function removePreset(id: string) {
   background: var(--rh-bg);
   border: 1px solid var(--rh-border);
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 14px 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.preset-card:hover {
+  border-color: color-mix(in srgb, var(--rh-accent) 25%, var(--rh-border));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 .preset-info {
   display: flex;
@@ -271,11 +294,13 @@ async function removePreset(id: string) {
 }
 .preset-default {
   font-size: 10px;
-  padding: 2px 6px;
-  background: var(--rh-accent);
-  color: white;
+  padding: 2px 8px;
+  background: color-mix(in srgb, var(--rh-accent) 20%, transparent);
+  color: var(--rh-accent);
+  border: 1px solid color-mix(in srgb, var(--rh-accent) 30%, transparent);
   border-radius: 4px;
   font-weight: 600;
+  letter-spacing: 0.3px;
 }
 .preset-details {
   display: flex;
