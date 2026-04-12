@@ -61,8 +61,9 @@
         </div>
       </div>
 
-      <button class="btn btn-primary btn-lg" :disabled="!topic.trim()" @click="submit">
-        Start Exploring
+      <button class="btn btn-primary btn-lg" :disabled="!topic.trim() || loading" @click="submit">
+        <span v-if="loading" class="btn-spinner"></span>
+        {{ loading ? 'Thinking...' : 'Start Exploring' }}
       </button>
 
       <div v-if="pastWorkflows.length > 0" class="past-section">
@@ -90,6 +91,7 @@ import { ref, computed, onMounted } from 'vue';
 
 defineProps<{
   pastWorkflows: Array<{ id: string; name: string; updated_at: string }>;
+  loading?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -431,5 +433,19 @@ function formatDate(dateStr: string) {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

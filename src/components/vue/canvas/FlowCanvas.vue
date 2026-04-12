@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { markRaw } from 'vue';
+import { markRaw, watch, nextTick } from 'vue';
 import { VueFlow, useVueFlow, type Node as VFNode, type Edge as VFEdge } from '@vue-flow/core';
 import { MiniMap } from '@vue-flow/minimap';
 import { Controls } from '@vue-flow/controls';
@@ -42,7 +42,7 @@ import '@vue-flow/core/dist/theme-default.css';
 import '@vue-flow/minimap/dist/style.css';
 import '@vue-flow/controls/dist/style.css';
 
-defineProps<{
+const props = defineProps<{
   nodes: VFNode[];
   edges: VFEdge[];
   selectedNodeId: string | null;
@@ -56,11 +56,25 @@ const emit = defineEmits<{
   'drop-node': [type: string, position: { x: number; y: number }];
 }>();
 
-const { screenToFlowCoordinate } = useVueFlow();
+const { screenToFlowCoordinate, fitView } = useVueFlow();
 
 const nodeTypes = {
   rabbithole: markRaw(RabbitholeNode),
 };
+
+// Fit view when nodes first appear (loading a workflow or SSE stream starts)
+let hasFitted = false;
+watch(() => props.nodes.length, (newLen, oldLen) => {
+  if (newLen > 0 && oldLen === 0) {
+    hasFitted = false;
+  }
+  if (newLen > 0 && !hasFitted) {
+    hasFitted = true;
+    nextTick(() => {
+      setTimeout(() => fitView({ padding: 0.2, duration: 300 }), 100);
+    });
+  }
+});
 
 function onNodeClick(_event: MouseEvent, node: VFNode) {
   emit('node-select', node.id);
@@ -83,6 +97,8 @@ function onDrop(event: DragEvent) {
 .flow-canvas-wrapper {
   flex: 1;
   min-height: 0;
+  width: 100%;
+  height: 100%;
   position: relative;
 }
 </style>

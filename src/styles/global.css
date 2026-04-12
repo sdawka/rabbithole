@@ -30,7 +30,6 @@ body {
   background: radial-gradient(ellipse at 50% 40%, var(--rh-surface) 0%, var(--rh-bg) 70%);
   color: var(--rh-text);
   min-height: 100vh;
-  overflow: hidden;
   position: relative;
 }
 

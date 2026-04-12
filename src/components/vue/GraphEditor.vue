@@ -1,7 +1,7 @@
 <template>
   <div class="editor-layout">
     <TopToolbar
-      v-if="state !== 'entry'"
+      v-if="state !== 'entry' && state !== 'clarifying-loading'"
       :workflow="currentWorkflow"
       :isExploring="state === 'exploring'"
       :layerDescription="layerDescription"
@@ -17,8 +17,9 @@
     <div class="editor-body">
       <!-- ENTRY STATE -->
       <EntryForm
-        v-if="state === 'entry'"
+        v-if="state === 'entry' || state === 'clarifying-loading'"
         :pastWorkflows="workflows"
+        :loading="state === 'clarifying-loading'"
         @submit="onTopicSubmit"
         @load-workflow="loadWorkflow"
       />
@@ -136,7 +137,7 @@ const nodeTypeRegistry: Record<string, { label: string; icon: string; color: str
 };
 
 // State machine
-type AppState = 'entry' | 'clarifying' | 'exploring' | 'browsing';
+type AppState = 'entry' | 'clarifying-loading' | 'clarifying' | 'exploring' | 'browsing';
 const state = ref<AppState>('entry');
 
 // Data
@@ -197,8 +198,8 @@ onMounted(async () => {
 async function onTopicSubmit(topic: string, context: string) {
   currentTopic.value = topic;
   currentContext.value = context;
-  state.value = 'clarifying';
-  clarifySummary.value = 'Thinking about your topic...';
+  state.value = 'clarifying-loading';
+  clarifySummary.value = '';
   clarifyAngles.value = [];
 
   try {
@@ -220,6 +221,7 @@ async function onTopicSubmit(topic: string, context: string) {
       { id: 'practical', label: 'Practical implications', description: 'How does this affect real life?' },
     ];
   }
+  state.value = 'clarifying';
 }
 
 async function onAnglesConfirmed(angles: string[]) {
