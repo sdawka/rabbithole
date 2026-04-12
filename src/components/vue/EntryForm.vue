@@ -28,6 +28,39 @@
         </div>
       </div>
 
+      <!-- API Keys section -->
+      <div class="keys-section">
+        <button class="keys-toggle" @click="showKeys = !showKeys">
+          <span class="keys-status" :class="{ configured: keysConfigured, missing: !keysConfigured }">
+            <span class="keys-dot"></span>
+            {{ keysConfigured ? 'API keys configured' : 'API keys required' }}
+          </span>
+          <span class="keys-chevron" :class="{ open: showKeys }">&#8250;</span>
+        </button>
+
+        <div v-if="showKeys" class="keys-fields">
+          <div class="field">
+            <label>OpenRouter API Key</label>
+            <input
+              type="password"
+              v-model="settings.openrouter_api_key"
+              placeholder="sk-or-..."
+              @blur="saveSettings"
+            />
+          </div>
+          <div class="field">
+            <label>Tavily API Key</label>
+            <input
+              type="password"
+              v-model="settings.tavily_api_key"
+              placeholder="tvly-..."
+              @blur="saveSettings"
+            />
+          </div>
+          <p v-if="saveStatus" class="save-status">{{ saveStatus }}</p>
+        </div>
+      </div>
+
       <button class="btn btn-primary btn-lg" :disabled="!topic.trim()" @click="submit">
         Start Exploring
       </button>
@@ -53,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 defineProps<{
   pastWorkflows: Array<{ id: string; name: string; updated_at: string }>;
@@ -66,6 +99,40 @@ const emit = defineEmits<{
 
 const topic = ref('');
 const context = ref('');
+const showKeys = ref(false);
+const saveStatus = ref('');
+const settings = ref<Record<string, string>>({
+  openrouter_api_key: '',
+  tavily_api_key: '',
+});
+
+const keysConfigured = computed(() =>
+  !!settings.value.openrouter_api_key && !!settings.value.tavily_api_key
+);
+
+onMounted(async () => {
+  try {
+    const res = await fetch('/api/config');
+    const data = await res.json();
+    settings.value = { openrouter_api_key: '', tavily_api_key: '', ...data };
+    // Auto-expand if keys are missing
+    if (!keysConfigured.value) {
+      showKeys.value = true;
+    }
+  } catch { /* ignore */ }
+});
+
+async function saveSettings() {
+  try {
+    await fetch('/api/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings.value),
+    });
+    saveStatus.value = 'Saved';
+    setTimeout(() => saveStatus.value = '', 2000);
+  } catch { /* ignore */ }
+}
 
 function submit() {
   if (!topic.value.trim()) return;
@@ -132,7 +199,7 @@ function formatDate(dateStr: string) {
 }
 
 .entry-fields {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   animation: fadeInUp 0.6s ease 0.15s both;
 }
 
@@ -174,6 +241,94 @@ function formatDate(dateStr: string) {
   line-height: 1.5;
 }
 
+/* API Keys section */
+.keys-section {
+  margin-bottom: 16px;
+  animation: fadeInUp 0.6s ease 0.25s both;
+}
+
+.keys-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid var(--rh-border);
+  border-radius: 8px;
+  color: var(--rh-text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.keys-toggle:hover {
+  border-color: color-mix(in srgb, var(--rh-accent) 30%, var(--rh-border));
+  background: var(--rh-surface);
+}
+
+.keys-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.keys-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.keys-status.configured .keys-dot {
+  background: var(--rh-success);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--rh-success) 50%, transparent);
+}
+
+.keys-status.missing .keys-dot {
+  background: var(--rh-accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--rh-accent) 50%, transparent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.keys-chevron {
+  font-size: 18px;
+  transition: transform 0.2s;
+  line-height: 1;
+}
+
+.keys-chevron.open {
+  transform: rotate(90deg);
+}
+
+.keys-fields {
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--rh-surface);
+  border: 1px solid var(--rh-border);
+  border-radius: 8px;
+  animation: fadeInUp 0.25s ease both;
+}
+
+.keys-fields .field {
+  margin-bottom: 12px;
+}
+
+.keys-fields .field:last-of-type {
+  margin-bottom: 0;
+}
+
+.keys-fields .field input {
+  font-size: 13px;
+  padding: 10px 12px;
+}
+
+.save-status {
+  font-size: 12px;
+  color: var(--rh-success);
+  margin-top: 8px;
+}
+
 .btn-lg {
   width: 100%;
   padding: 14px;
@@ -182,7 +337,7 @@ function formatDate(dateStr: string) {
   background: linear-gradient(135deg, var(--rh-accent), color-mix(in srgb, var(--rh-accent) 85%, #ff8800));
   border: none;
   transition: box-shadow 0.25s, transform 0.15s;
-  animation: fadeInUp 0.6s ease 0.3s both;
+  animation: fadeInUp 0.6s ease 0.35s both;
 }
 
 .btn-lg:hover:not(:disabled) {
@@ -271,5 +426,10 @@ function formatDate(dateStr: string) {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 </style>
