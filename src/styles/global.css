@@ -1,0 +1,130 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --rh-bg: #0f0f1a;
+  --rh-surface: #1a1a2e;
+  --rh-surface-2: #222240;
+  --rh-border: #2a2a4a;
+  --rh-text: #e8e8f0;
+  --rh-text-dim: #8888aa;
+  --rh-accent: #e94560;
+  --rh-accent-2: #7c3aed;
+  --rh-entry: #e94560;
+  --rh-research: #3b82f6;
+  --rh-analysis: #8b5cf6;
+  --rh-synthesis: #f59e0b;
+  --rh-success: #10b981;
+  --rh-error: #ef4444;
+  --rh-radius: 8px;
+  --rh-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --rh-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+body {
+  font-family: var(--rh-font);
+  background: var(--rh-bg);
+  color: var(--rh-text);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+a {
+  color: var(--rh-accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font-family: var(--rh-font);
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+input, textarea, select {
+  font-family: var(--rh-font);
+  background: var(--rh-surface);
+  color: var(--rh-text);
+  border: 1px solid var(--rh-border);
+  border-radius: var(--rh-radius);
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--rh-accent);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--rh-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--rh-text-dim);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--rh-radius);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: var(--rh-accent);
+  color: white;
+}
+.btn-primary:hover {
+  background: #d63d56;
+}
+
+.btn-secondary {
+  background: var(--rh-surface-2);
+  color: var(--rh-text);
+  border: 1px solid var(--rh-border);
+}
+.btn-secondary:hover {
+  background: var(--rh-border);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--rh-text-dim);
+}
+.btn-ghost:hover {
+  color: var(--rh-text);
+  background: var(--rh-surface-2);
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--rh-error);
+  border: 1px solid var(--rh-error);
+}
+.btn-danger:hover {
+  background: var(--rh-error);
+  color: white;
+}

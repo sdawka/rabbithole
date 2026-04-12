@@ -1,0 +1,22 @@
+---
+import ConfigPanel from '../components/vue/config/ConfigPanel.vue';
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rabbithole - Settings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div style="min-height: 100vh; padding: 40px;">
+      <ConfigPanel client:only="vue" />
+    </div>
+  </body>
+</html>
+
+<style is:global>
+  @import '../styles/global.css';
+</style>

@@ -1,0 +1,48 @@
+import type { D1Database } from '@cloudflare/workers-types';
+import { nanoid } from 'nanoid';
+import type { Workflow, WorkflowFull, NodeRecord, EdgeRecord } from '../types/index.js';
+
+export async function listWorkflows(db: D1Database): Promise<Workflow[]> {
+  const { results } = await db.prepare('SELECT * FROM workflows ORDER BY updated_at DESC').all<Workflow>();
+  return results;
+}
+
+export async function getWorkflow(db: D1Database, id: string): Promise<WorkflowFull | undefined> {
+  const workflow = await db.prepare('SELECT * FROM workflows WHERE id = ?').bind(id).first<Workflow>();
+  if (!workflow) return undefined;
+  const { results: nodes } = await db.prepare('SELECT * FROM nodes WHERE workflow_id = ?').bind(id).all<NodeRecord>();
+  const { results: edges } = await db.prepare('SELECT * FROM edges WHERE workflow_id = ?').bind(id).all<EdgeRecord>();
+  return { ...workflow, nodes, edges };
+}
+
+export async function createWorkflow(db: D1Database, data?: Partial<{ name: string; description: string }>): Promise<Workflow> {
+  const id = nanoid(12);
+  await db.prepare(
+    'INSERT INTO workflows (id, name, description) VALUES (?, ?, ?)'
+  ).bind(id, data?.name ?? 'Untitled Rabbit Hole', data?.description ?? '').run();
+  const row = await db.prepare('SELECT * FROM workflows WHERE id = ?').bind(id).first<Workflow>();
+  return row!;
+}
+
+export async function updateWorkflow(db: D1Database, id: string, data: Partial<{ name: string; description: string; viewport_x: number; viewport_y: number; viewport_zoom: number }>): Promise<Workflow | undefined> {
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  for (const [key, value] of Object.entries(data)) {
+    fields.push(`${key} = ?`);
+    values.push(value);
+  }
+  if (fields.length === 0) {
+    const row = await db.prepare('SELECT * FROM workflows WHERE id = ?').bind(id).first<Workflow>();
+    return row ?? undefined;
+  }
+  fields.push("updated_at = datetime('now')");
+  values.push(id);
+  await db.prepare(`UPDATE workflows SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
+  const row = await db.prepare('SELECT * FROM workflows WHERE id = ?').bind(id).first<Workflow>();
+  return row ?? undefined;
+}
+
+export async function deleteWorkflow(db: D1Database, id: string): Promise<boolean> {
+  const result = await db.prepare('DELETE FROM workflows WHERE id = ?').bind(id).run();
+  return (result.meta?.changes ?? 0) > 0;
+}

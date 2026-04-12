@@ -1,0 +1,40 @@
+.vue-flow {
+  background: var(--rh-bg);
+}
+
+.vue-flow__background {
+  background: var(--rh-bg);
+}
+
+.vue-flow__background pattern circle {
+  fill: var(--rh-border);
+}
+
+.vue-flow__minimap {
+  background: var(--rh-surface);
+  border: 1px solid var(--rh-border);
+  border-radius: var(--rh-radius);
+}
+
+.vue-flow__controls {
+  background: var(--rh-surface);
+  border: 1px solid var(--rh-border);
+  border-radius: var(--rh-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.vue-flow__controls-button {
+  background: var(--rh-surface);
+  color: var(--rh-text);
+  border-bottom: 1px solid var(--rh-border);
+  fill: var(--rh-text);
+}
+
+.vue-flow__controls-button:hover {
+  background: var(--rh-surface-2);
+}
+
+.vue-flow__selection {
+  background: rgba(233, 69, 96, 0.1);
+  border: 1px dashed var(--rh-accent);
+}
