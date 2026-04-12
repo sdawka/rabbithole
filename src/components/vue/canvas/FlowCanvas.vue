@@ -20,6 +20,7 @@
       @edges-change="$emit('edges-change', $event)"
       @connect="$emit('connect', $event)"
       @node-click="onNodeClick"
+      @node-double-click="onNodeDblClick"
       @pane-click="$emit('node-select', null)"
     >
       <MiniMap />
@@ -53,6 +54,7 @@ const emit = defineEmits<{
   'edges-change': [changes: any[]];
   'connect': [params: any];
   'node-select': [nodeId: string | null];
+  'node-dblclick': [nodeId: string];
   'drop-node': [type: string, position: { x: number; y: number }];
 }>();
 
@@ -78,6 +80,10 @@ watch(() => props.nodes.length, (newLen, oldLen) => {
 
 function onNodeClick(_event: MouseEvent, node: VFNode) {
   emit('node-select', node.id);
+}
+
+function onNodeDblClick(_event: MouseEvent, node: VFNode) {
+  emit('node-dblclick', node.id);
 }
 
 function onDrop(event: DragEvent) {

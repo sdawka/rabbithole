@@ -1,5 +1,5 @@
 <template>
-  <div class="editor-layout">
+  <div class="editor-layout" :class="{ 'canvas-mode': state === 'exploring' || state === 'browsing' }">
     <TopToolbar
       v-if="state !== 'entry' && state !== 'clarifying-loading'"
       :workflow="currentWorkflow"
@@ -41,6 +41,7 @@
             :edges="flowEdges"
             :selectedNodeId="selectedNodeId"
             @node-select="selectNode"
+            @node-dblclick="openNodeDetail"
             @nodes-change="onNodesChange"
             @edges-change="onEdgesChange"
             @connect="onConnect"
@@ -64,20 +65,31 @@
           :nodeTypeDef="selectedNodeTypeDef"
           @update-node="onUpdateNode"
           @run-node="onRunNode"
+          @expand-node="openNodeDetail"
           @close="selectedNodeId = null"
         />
       </template>
     </div>
+
+    <NodeDetailModal
+      :node="detailNode"
+      :allNodes="nodes"
+      :edges="edges"
+      :nodeTypes="nodeTypeRegistry"
+      @close="detailNodeId = null"
+      @navigate="navigateDetail"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import EntryForm from './EntryForm.vue';
 import ClarifyStep from './ClarifyStep.vue';
 import RightSidebar from './sidebar/RightSidebar.vue';
 import TopToolbar from './toolbar/TopToolbar.vue';
 import FlowCanvas from './canvas/FlowCanvas.vue';
+import NodeDetailModal from './NodeDetailModal.vue';
 
 interface NodeRecord {
   id: string;
@@ -382,6 +394,26 @@ function selectNode(nodeId: string | null) {
   selectedNodeId.value = nodeId;
 }
 
+// Node detail modal
+const detailNodeId = ref<string | null>(null);
+const detailNode = computed(() => nodes.value.find(n => n.id === detailNodeId.value) ?? null);
+
+function openNodeDetail(nodeId: string) {
+  detailNodeId.value = nodeId;
+}
+
+function navigateDetail(nodeId: string) {
+  detailNodeId.value = nodeId;
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && detailNodeId.value) {
+    detailNodeId.value = null;
+  }
+}
+onMounted(() => window.addEventListener('keydown', onKeydown));
+onUnmounted(() => window.removeEventListener('keydown', onKeydown));
+
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function onNodesChange(changes: Array<{ id: string; type: string; position?: { x: number; y: number }; dragging?: boolean }>) {
@@ -489,6 +521,10 @@ function goToSettings() {
   display: flex;
   flex-direction: column;
   width: 100vw;
+  min-height: 100vh;
+}
+
+.editor-layout.canvas-mode {
   height: 100vh;
   overflow: hidden;
 }

@@ -57,7 +57,10 @@
       </div>
 
       <div v-if="node.output_data" class="inspector-section">
-        <label>Output</label>
+        <div class="output-header">
+          <label>Output</label>
+          <button class="btn btn-ghost btn-sm" @click="$emit('expand-node', node.id)">Expand</button>
+        </div>
         <div class="output-display">{{ node.output_data }}</div>
       </div>
 
@@ -89,6 +92,7 @@ defineProps<{
 defineEmits<{
   'update-node': [id: string, data: Record<string, unknown>];
   'run-node': [nodeId: string];
+  'expand-node': [nodeId: string];
   'close': [];
 }>();
 </script>
@@ -191,6 +195,17 @@ defineEmits<{
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.5;
+}
+
+.output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.output-header label {
+  margin-bottom: 0;
 }
 
 .output-display.error {
