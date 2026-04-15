@@ -16,7 +16,7 @@
       :snap-to-grid="true"
       :snap-grid="[20, 20]"
       fit-view-on-init
-      @nodes-change="$emit('nodes-change', $event)"
+      @nodes-change="onNodesChange"
       @edges-change="$emit('edges-change', $event)"
       @connect="$emit('connect', $event)"
       @node-click="onNodeClick"
@@ -80,6 +80,17 @@ watch(() => props.nodes.length, (newLen, oldLen) => {
 
 function onNodeClick(_event: MouseEvent, node: VFNode) {
   emit('node-select', node.id);
+}
+
+function onNodesChange(changes: any[]) {
+  // Check for selection changes
+  for (const change of changes) {
+    if (change.type === 'select' && change.selected) {
+      emit('node-select', change.id);
+    }
+  }
+  // Forward all changes to parent
+  emit('nodes-change', changes);
 }
 
 function onNodeDblClick(_event: MouseEvent, node: VFNode) {

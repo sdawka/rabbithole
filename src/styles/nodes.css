@@ -26,6 +26,15 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
+/* Branch indicator - left border stripe */
+.rh-node.branched {
+  border-left: 4px solid var(--branch-color, var(--rh-accent));
+  box-shadow:
+    -4px 0 12px color-mix(in srgb, var(--branch-color, var(--rh-accent)) 20%, transparent),
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
 .rh-node-header {
   display: flex;
   align-items: center;
@@ -38,6 +47,55 @@
 
 .rh-node-header .icon {
   font-size: 16px;
+}
+
+.rh-node-header .title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rh-node-header .play-btn {
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--rh-accent) 20%, transparent);
+  border: 1px solid var(--rh-accent);
+  border-radius: 6px;
+  color: var(--rh-accent);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.rh-node:hover .play-btn {
+  opacity: 1;
+}
+
+.rh-node-header .play-btn:hover {
+  background: var(--rh-accent);
+  color: var(--rh-bg);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--rh-accent) 50%, transparent);
+}
+
+.rh-node-header .running-indicator {
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, var(--rh-accent) 25%, transparent);
+  border-top-color: var(--rh-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .rh-node-body {

@@ -65,3 +65,18 @@ export async function getUpstreamOutputs(nodeId: string): Promise<{ handle: stri
   `).bind(nodeId).all<{ handle: string; output: string; sourceNodeId: string }>();
   return results;
 }
+
+export async function getWorkflowGraph(workflowId: string): Promise<{
+  nodes: NodeRecord[];
+  edges: { source_node: string; target_node: string }[];
+}> {
+  const { results: nodes } = await getDb().prepare(
+    'SELECT * FROM nodes WHERE workflow_id = ?'
+  ).bind(workflowId).all<NodeRecord>();
+
+  const { results: edges } = await getDb().prepare(
+    'SELECT source_node, target_node FROM edges WHERE workflow_id = ?'
+  ).bind(workflowId).all<{ source_node: string; target_node: string }>();
+
+  return { nodes, edges };
+}

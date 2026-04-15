@@ -56,6 +56,12 @@
         </button>
       </div>
 
+      <div class="inspector-section inspector-danger">
+        <button class="btn btn-danger" @click="$emit('delete-node', node.id)">
+          Delete Node
+        </button>
+      </div>
+
       <div v-if="node.output_data" class="inspector-section">
         <div class="output-header">
           <label>Output</label>
@@ -92,6 +98,7 @@ defineProps<{
 defineEmits<{
   'update-node': [id: string, data: Record<string, unknown>];
   'run-node': [nodeId: string];
+  'delete-node': [nodeId: string];
   'expand-node': [nodeId: string];
   'close': [];
 }>();
@@ -212,5 +219,28 @@ defineEmits<{
   color: var(--rh-error);
   border-color: var(--rh-error);
   border-left-color: var(--rh-error);
+}
+
+.inspector-danger {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--rh-border);
+}
+
+.btn-danger {
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--rh-error) 40%, var(--rh-border));
+  border-radius: 6px;
+  color: var(--rh-error);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--rh-error) 10%, transparent);
+  border-color: var(--rh-error);
 }
 </style>

@@ -26,14 +26,28 @@ export interface Workflow {
   updated_at: string;
 }
 
+export interface Branch {
+  id: string;
+  workflow_id: string;
+  name: string;
+  parent_branch_id: string | null;
+  fork_node_id: string | null;
+  color: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface WorkflowFull extends Workflow {
   nodes: NodeRecord[];
   edges: EdgeRecord[];
+  branches: Branch[];
 }
 
 export interface NodeRecord {
   id: string;
   workflow_id: string;
+  branch_id: string | null;
+  source_node_id: string | null;
   node_type: string;
   title: string;
   position_x: number;

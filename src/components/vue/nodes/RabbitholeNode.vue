@@ -1,11 +1,22 @@
 <template>
   <div
     class="rh-node"
-    :class="[`cat-${data.typeDef?.category ?? 'entry'}`, `status-${data.status ?? 'idle'}`, { selected: selected }]"
+    :class="[`cat-${data.typeDef?.category ?? 'entry'}`, `status-${data.status ?? 'idle'}`, { selected: selected, branched: !!data.branchColor }]"
+    :style="data.branchColor ? { '--branch-color': data.branchColor } : {}"
   >
     <div class="rh-node-header">
       <span class="icon">{{ data.typeDef?.icon ?? '?' }}</span>
       <span class="title">{{ data.title }}</span>
+      <button
+        v-if="data.status !== 'running'"
+        class="play-btn"
+        title="Continue from here"
+        @click.stop="onPlayClick"
+        @mousedown.stop
+      >
+        ▶
+      </button>
+      <span v-else class="running-indicator"></span>
     </div>
 
     <div v-if="data.typeDef?.userInputField && data.status !== 'done'" class="rh-node-input">
@@ -119,6 +130,15 @@ const statusLabel = computed(() => {
   const s = props.data.status ?? 'idle';
   return { idle: 'Ready', running: 'Running...', done: 'Complete', error: 'Error' }[s] ?? s;
 });
+
+function onPlayClick() {
+  // Emit custom event that bubbles up to FlowCanvas
+  const event = new CustomEvent('rh-run-from', {
+    bubbles: true,
+    detail: { nodeId: props.data.id },
+  });
+  document.dispatchEvent(event);
+}
 
 function handleStyleV(name: string, type: 'input' | 'output'): Record<string, string> {
   const handles = type === 'input' ? (props.data.typeDef?.inputs ?? []) : (props.data.typeDef?.outputs ?? []);

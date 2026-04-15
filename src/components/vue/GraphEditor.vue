@@ -65,6 +65,7 @@
           :nodeTypeDef="selectedNodeTypeDef"
           @update-node="onUpdateNode"
           @run-node="onRunNode"
+          @delete-node="onDeleteNode"
           @expand-node="openNodeDetail"
           @close="selectedNodeId = null"
         />
@@ -79,6 +80,64 @@
       @close="detailNodeId = null"
       @navigate="navigateDetail"
     />
+
+    <!-- Branch selector (floating) -->
+    <div v-if="branches.length > 0 && (state === 'exploring' || state === 'browsing')" class="branch-selector">
+      <select :value="currentBranchId ?? ''" @change="onBranchChange">
+        <option value="">main</option>
+        <option v-for="b in branches" :key="b.id" :value="b.id">
+          {{ b.name }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Branch dialog -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showBranchDialog" class="modal-overlay" @click.self="showBranchDialog = false">
+          <div class="branch-dialog">
+            <h3>Continue from this node</h3>
+            <p class="branch-dialog-desc">Run this node and all downstream nodes. Choose how to handle existing outputs:</p>
+
+            <div class="branch-dialog-options">
+              <button class="branch-option" @click="onBranchDialogRun(false)">
+                <span class="option-icon">↻</span>
+                <span class="option-text">
+                  <strong>Overwrite</strong>
+                  <span>Re-run on current branch, replacing outputs</span>
+                </span>
+              </button>
+
+              <div class="branch-option-new">
+                <div class="option-header">
+                  <span class="option-icon">⑂</span>
+                  <span class="option-text">
+                    <strong>New branch</strong>
+                    <span>Fork from here, keep original intact</span>
+                  </span>
+                </div>
+                <div class="branch-name-input">
+                  <input
+                    v-model="newBranchName"
+                    placeholder="Branch name..."
+                    @keydown.enter="newBranchName.trim() && onBranchDialogRun(true)"
+                  />
+                  <button
+                    class="btn btn-primary"
+                    :disabled="!newBranchName.trim()"
+                    @click="onBranchDialogRun(true)"
+                  >
+                    Create & Run
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button class="branch-dialog-cancel" @click="showBranchDialog = false">Cancel</button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -94,6 +153,8 @@ import NodeDetailModal from './NodeDetailModal.vue';
 interface NodeRecord {
   id: string;
   workflow_id: string;
+  branch_id: string | null;
+  source_node_id: string | null;
   node_type: string;
   title: string;
   position_x: number;
@@ -133,6 +194,15 @@ interface Preset {
   is_default: number;
 }
 
+interface Branch {
+  id: string;
+  workflow_id: string;
+  name: string;
+  parent_branch_id: string | null;
+  fork_node_id: string | null;
+  color: string;
+}
+
 const nodeTypeRegistry: Record<string, { label: string; icon: string; color: string; category: string; userInputField: boolean; inputs: Array<{ name: string; label: string }>; outputs: Array<{ name: string; label: string }> }> = {
   topic_entry: { label: 'Topic Entry', icon: '🕳️', color: '#e94560', category: 'entry', userInputField: true, inputs: [], outputs: [{ name: 'topic', label: 'Topic' }] },
   brain_dump: { label: 'Brain Dump', icon: '🧠', color: '#e94560', category: 'entry', userInputField: true, inputs: [{ name: 'topic', label: 'Topic' }], outputs: [{ name: 'knowledge_dump', label: 'Knowledge Dump' }] },
@@ -157,11 +227,18 @@ const workflows = ref<Workflow[]>([]);
 const currentWorkflow = ref<Workflow | null>(null);
 const nodes = ref<NodeRecord[]>([]);
 const edges = ref<EdgeRecord[]>([]);
+const branches = ref<Branch[]>([]);
+const currentBranchId = ref<string | null>(null);
 const selectedNodeId = ref<string | null>(null);
 const presets = ref<Preset[]>([]);
 const layerDescription = ref('');
 const currentLayer = ref(0);
 const totalLayers = ref(7);
+
+// Branch dialog state
+const showBranchDialog = ref(false);
+const pendingRunNodeId = ref<string | null>(null);
+const newBranchName = ref('');
 
 // Clarify state
 const currentTopic = ref('');
@@ -173,28 +250,48 @@ const clarifyAngles = ref<Array<{ id: string; label: string; description: string
 const selectedNode = computed(() => nodes.value.find(n => n.id === selectedNodeId.value) ?? null);
 const selectedNodeTypeDef = computed(() => selectedNode.value ? nodeTypeRegistry[selectedNode.value.node_type] : null);
 
+// Filter nodes to show: main branch nodes (no branch_id) + current branch nodes
+const visibleNodes = computed(() => {
+  if (!currentBranchId.value) {
+    // Show only main branch (nodes with no branch_id)
+    return nodes.value.filter(n => !n.branch_id);
+  }
+  // Show main branch nodes that aren't overridden + current branch nodes
+  const branchNodeSources = new Set(
+    nodes.value.filter(n => n.branch_id === currentBranchId.value).map(n => n.source_node_id)
+  );
+  return nodes.value.filter(n =>
+    n.branch_id === currentBranchId.value ||
+    (!n.branch_id && !branchNodeSources.has(n.id))
+  );
+});
+
 const flowNodes = computed(() =>
-  nodes.value.map(n => {
+  visibleNodes.value.map(n => {
     const typeDef = nodeTypeRegistry[n.node_type];
+    const branch = n.branch_id ? branches.value.find(b => b.id === n.branch_id) : null;
     return {
       id: n.id,
       type: 'rabbithole',
       position: { x: n.position_x, y: n.position_y },
-      data: { ...n, typeDef },
+      data: { ...n, typeDef, branchColor: branch?.color },
     };
   })
 );
 
-const flowEdges = computed(() =>
-  edges.value.map(e => ({
-    id: e.id,
-    source: e.source_node,
-    target: e.target_node,
-    sourceHandle: e.source_handle,
-    targetHandle: e.target_handle,
-    animated: nodes.value.find(n => n.id === e.source_node)?.status === 'running',
-  }))
-);
+const flowEdges = computed(() => {
+  const visibleNodeIds = new Set(visibleNodes.value.map(n => n.id));
+  return edges.value
+    .filter(e => visibleNodeIds.has(e.source_node) && visibleNodeIds.has(e.target_node))
+    .map(e => ({
+      id: e.id,
+      source: e.source_node,
+      target: e.target_node,
+      sourceHandle: e.source_handle,
+      targetHandle: e.target_handle,
+      animated: nodes.value.find(n => n.id === e.source_node)?.status === 'running',
+    }));
+});
 
 onMounted(async () => {
   const [wfRes, presetRes] = await Promise.all([
@@ -319,6 +416,8 @@ function handleSSEEvent(data: Record<string, any>) {
       nodes.value.push({
         id: data.nodeId,
         workflow_id: currentWorkflow.value?.id ?? '',
+        branch_id: null,
+        source_node_id: null,
         node_type: data.nodeType,
         title: data.title,
         position_x: data.position.x,
@@ -376,6 +475,10 @@ async function loadWorkflow(id: string) {
   currentWorkflow.value = wf;
   nodes.value = wf.nodes ?? [];
   edges.value = wf.edges ?? [];
+  branches.value = wf.branches ?? [];
+  // Default to main branch or first branch
+  const mainBranch = branches.value.find(b => b.name === 'main');
+  currentBranchId.value = mainBranch?.id ?? null;
   selectedNodeId.value = null;
   state.value = 'browsing';
 }
@@ -410,9 +513,47 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && detailNodeId.value) {
     detailNodeId.value = null;
   }
+  // Delete selected node with Backspace or Delete key
+  if ((e.key === 'Backspace' || e.key === 'Delete') && selectedNodeId.value) {
+    // Don't delete if user is typing in an input
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+    onDeleteNode(selectedNodeId.value);
+  }
 }
-onMounted(() => window.addEventListener('keydown', onKeydown));
-onUnmounted(() => window.removeEventListener('keydown', onKeydown));
+
+function onRunFrom(e: Event) {
+  const detail = (e as CustomEvent).detail;
+  if (detail?.nodeId) {
+    // Show branch dialog to let user choose
+    pendingRunNodeId.value = detail.nodeId;
+    newBranchName.value = '';
+    showBranchDialog.value = true;
+  }
+}
+
+function onBranchDialogRun(createBranch: boolean) {
+  const nodeId = pendingRunNodeId.value;
+  showBranchDialog.value = false;
+  if (!nodeId) return;
+
+  if (createBranch && newBranchName.value.trim()) {
+    runFromNode(nodeId, newBranchName.value.trim());
+  } else {
+    runFromNode(nodeId);
+  }
+  pendingRunNodeId.value = null;
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown);
+  document.addEventListener('rh-run-from', onRunFrom);
+});
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown);
+  document.removeEventListener('rh-run-from', onRunFrom);
+});
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -495,6 +636,13 @@ async function onUpdateNode(id: string, data: Record<string, unknown>) {
   if (idx >= 0) nodes.value[idx] = updated;
 }
 
+async function onDeleteNode(id: string) {
+  await fetch(`/api/nodes/${id}`, { method: 'DELETE' });
+  nodes.value = nodes.value.filter(n => n.id !== id);
+  edges.value = edges.value.filter(e => e.source_node !== id && e.target_node !== id);
+  selectedNodeId.value = null;
+}
+
 async function onRunNode(nodeId: string) {
   const node = nodes.value.find(n => n.id === nodeId);
   if (node) node.status = 'running';
@@ -511,8 +659,96 @@ async function onRunNode(nodeId: string) {
   }
 }
 
+async function runFromNode(startNodeId: string, branchName?: string) {
+  try {
+    const res = await fetch(`/api/nodes/${startNodeId}/run-from`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...keyHeaders() },
+      body: JSON.stringify(branchName ? { branchName } : {}),
+    });
+
+    const reader = res.body?.getReader();
+    if (!reader) return;
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          handleRunFromEvent(data);
+        } catch { /* skip malformed events */ }
+      }
+    }
+  } catch (err) {
+    console.error('Run from error:', err);
+  } finally {
+    // Reload workflow to get final state
+    if (currentWorkflow.value) {
+      await loadWorkflow(currentWorkflow.value.id);
+    }
+  }
+}
+
+function handleRunFromEvent(data: Record<string, any>) {
+  switch (data.type) {
+    case 'run_start': {
+      // If a new branch was created, switch to it
+      if (data.branch) {
+        branches.value.push({
+          id: data.branch.id,
+          workflow_id: currentWorkflow.value?.id ?? '',
+          name: data.branch.name,
+          parent_branch_id: currentBranchId.value,
+          fork_node_id: null,
+          color: '#6366f1',
+        });
+        currentBranchId.value = data.branch.id;
+      }
+      // Reset all nodes that will be run
+      for (const nodeId of data.nodeIds ?? []) {
+        const node = nodes.value.find(n => n.id === nodeId);
+        if (node) {
+          node.status = 'idle';
+          node.output_data = '';
+          node.error_message = '';
+        }
+      }
+      break;
+    }
+    case 'node_start': {
+      const node = nodes.value.find(n => n.id === data.nodeId);
+      if (node) node.status = 'running';
+      break;
+    }
+    case 'node_complete': {
+      const node = nodes.value.find(n => n.id === data.nodeId);
+      if (node) {
+        node.status = data.status;
+        if (data.output) node.output_data = data.output;
+        if (data.error) node.error_message = data.error;
+      }
+      break;
+    }
+  }
+}
+
 function goToSettings() {
   window.location.href = '/config';
+}
+
+function onBranchChange(e: Event) {
+  const value = (e.target as HTMLSelectElement).value;
+  currentBranchId.value = value || null;
 }
 </script>
 
@@ -629,5 +865,192 @@ function goToSettings() {
 .toast-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(8px) scale(0.98);
+}
+
+/* Branch selector */
+.branch-selector {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  z-index: 50;
+}
+
+.branch-selector select {
+  padding: 6px 28px 6px 12px;
+  background: var(--rh-surface);
+  border: 1px solid var(--rh-border);
+  border-radius: 8px;
+  color: var(--rh-text);
+  font-size: 12px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6,9 12,15 18,9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.branch-selector select:hover {
+  border-color: var(--rh-accent);
+}
+
+/* Branch dialog */
+.branch-dialog {
+  background: var(--rh-surface);
+  border: 1px solid var(--rh-border);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+.branch-dialog h3 {
+  font-family: var(--rh-font-display);
+  font-size: 20px;
+  font-weight: 400;
+  font-style: italic;
+  margin: 0 0 8px;
+}
+
+.branch-dialog-desc {
+  font-size: 13px;
+  color: var(--rh-text-dim);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.branch-dialog-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.branch-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--rh-bg);
+  border: 1px solid var(--rh-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  width: 100%;
+}
+
+.branch-option:hover {
+  border-color: var(--rh-accent);
+  background: color-mix(in srgb, var(--rh-accent) 5%, var(--rh-bg));
+}
+
+.branch-option-new {
+  padding: 14px 16px;
+  background: var(--rh-bg);
+  border: 1px solid var(--rh-border);
+  border-radius: 10px;
+}
+
+.branch-option-new .option-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.option-icon {
+  font-size: 20px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--rh-surface-2);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.option-text strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.option-text span {
+  font-size: 12px;
+  color: var(--rh-text-dim);
+}
+
+.branch-name-input {
+  display: flex;
+  gap: 8px;
+}
+
+.branch-name-input input {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--rh-surface);
+  border: 1px solid var(--rh-border);
+  border-radius: 6px;
+  color: var(--rh-text);
+  font-size: 13px;
+}
+
+.branch-name-input input:focus {
+  outline: none;
+  border-color: var(--rh-accent);
+}
+
+.branch-dialog-cancel {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid var(--rh-border);
+  border-radius: 8px;
+  color: var(--rh-text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.branch-dialog-cancel:hover {
+  border-color: var(--rh-text-dim);
+  color: var(--rh-text);
+}
+
+/* Modal transitions (reuse from NodeDetailModal) */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 32px;
+}
+
+.modal-enter-active {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-leave-active {
+  transition: all 0.15s ease;
+}
+.modal-enter-from {
+  opacity: 0;
+}
+.modal-enter-from .branch-dialog {
+  transform: scale(0.96) translateY(8px);
+}
+.modal-leave-to {
+  opacity: 0;
 }
 </style>
